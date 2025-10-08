@@ -29,7 +29,7 @@
 - [X] Renderização de múltiplos objetos  
 - [X] Detecção de colisão
 
-## 📂 Estrutura do Repositório
+## Estrutura do Repositório
 
 ```plaintext
 📂 GA_PG2025-2/
