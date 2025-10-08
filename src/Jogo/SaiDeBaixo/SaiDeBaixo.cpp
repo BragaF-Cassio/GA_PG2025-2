@@ -12,8 +12,8 @@
  * 
  * Descrição:
  *   "Sai de Baixo!" é um jogo de queda de plataformas, em que alguém
- * 		muito incompetente derruba plataformas misteriosamente coloridas
- * 		continuamente e coincidentemente acima de sua cabeça. Como um 
+ * 		muito incompetente derruba plataformas continuamente e
+ * 		coincidentemente acima de sua cabeça. Como um 
  * 		ser vivo que preza pela própria existência, seus instintos dizem que
  * 		você não deve ficar abaixo das plataformas que estão em queda, caso
  * 		queira sobreviver ao máximo de tempo possível.
@@ -43,6 +43,7 @@ using namespace std;
 #include <glm/glm.hpp> 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <stb_image.h>
 
 #define STEP_SIZE 16
 #define PLAYER_WIDTH (WIDTH/20)
@@ -85,9 +86,11 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
 // Protótipos das funções
 int setupShader();
+int randomFall();
 bool checkCollision(GameObject *one, GameObject *two);
 int objectDrawn(GameObject *player, GameObject *walls, GLuint quantWalls, GameObject *platforms, GLuint quantPlatforms);
 void gameSetup(GameObject *player, GameObject *walls, GLuint quantWalls, GameObject *platforms, GLuint quantPlatforms);
+GLuint loadTexture(string filePath);
 
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 800, HEIGHT = 600;
@@ -126,6 +129,10 @@ game_state estado_de_jogo = GAME_STOPPED;
 GameObject player;
 GameObject walls[2];
 GameObject platforms[PLATFORMS];
+GLboolean isPlatFalling[PLATFORMS];
+
+GLuint max_points = 0;
+GLuint points = 0;
 
 bool moveLeft = false, moveRight = false;
 
@@ -162,7 +169,16 @@ void gameSetup(GameObject *player, GameObject *walls, GLuint quantWalls, GameObj
 
 		platforms[i].bottomRight = {platforms[i].topLeft.x + platformWidth, 0};
 		platforms[i].colors = {1, 0, 0};
+
+		isPlatFalling[i] = false;
 	}
+
+	platormToFall = randomFall();
+
+	points = 0;
+
+	cout << "Iniciando partida..." << endl;
+	cout << "Pontuacao Maxima Atual: " << max_points << endl;
 }
 
 // Função MAIN
@@ -218,14 +234,18 @@ int main()
 
 	GameObject *tmpObj;
 
-	GLuint platformFallSpeed = 10;
-	
+	GLuint platformFallSpeed = 3;
 
 	gameSetup(&player, walls, 2, platforms, PLATFORMS);
 
 	// Gerando um buffer simples, com a geometria de um triângulo
 	GLuint VAO[1];
+
+	GLuint texID = loadTexture("../assets/tex/background.png");
 	
+	//Habilitação do teste de profundidade
+	glEnable(GL_DEPTH_TEST);
+
 	glUseProgram(shaderID); // Reseta o estado do shader para evitar problemas futuros
 
 	double prev_s = glfwGetTime();	// Define o "tempo anterior" inicial.
@@ -234,17 +254,19 @@ int main()
 	// Criação da matriz de projeção
 	mat4 projection = ortho(0.0, (double)WIDTH, (double)HEIGHT, 0.0, -1.0, 1.0);
 
-	// Utilizamos a variáveis do tipo uniform em GLSL para armazenar esse tipo de info
-	// que não está nos buffers
-	// Mandar a matriz de projeção para o shader
 	glUniformMatrix4fv(glGetUniformLocation(shaderID, "projection"),1,GL_FALSE,value_ptr(projection));
+
+	mat4 model = mat4(1); //matriz identidade
+
+	// Ativar o primeiro buffer de textura do OpenGL
+	glActiveTexture(GL_TEXTURE0);
 
 	VAO[0] = objectDrawn(&player, walls, 2, platforms, PLATFORMS);
 
+	double lastUpdateTime;
 	// Loop da aplicação - "game loop"
 	while (!glfwWindowShouldClose(window))
 	{
-		// Este trecho de código é totalmente opcional: calcula e mostra a contagem do FPS na barra de título
 		{
 			double curr_s = glfwGetTime();		// Obtém o tempo atual.
 			double elapsed_s = curr_s - prev_s; // Calcula o tempo decorrido desde o último frame.
@@ -255,14 +277,17 @@ int main()
 			if (title_countdown_s <= 0.0 && elapsed_s > 0.0)
 			{
 				double fps = 1.0 / elapsed_s; // Calcula o FPS com base no tempo decorrido.
-
 				// Cria uma string e define o FPS como título da janela.
 				char tmp[256];
 				sprintf(tmp, "Sai de Baixo!\tFPS %.2lf", fps);
 				glfwSetWindowTitle(window, tmp);
 
 				title_countdown_s = 0.1; // Reinicia o temporizador para atualizar o título periodicamente.
+			}
 
+			if(curr_s - lastUpdateTime > 0.016)
+			{
+				lastUpdateTime = curr_s;
 				if(estado_de_jogo == GAME_RUNNING)
 				{
 					if(moveLeft)
@@ -294,17 +319,29 @@ int main()
 						if(checkCollision(&player, &platforms[i]))
 						{
 							estado_de_jogo = GAME_FINISHED;
+							cout << "FIM DE JOGO" << endl;
+							cout << "Pontuacao: " << points << endl;
+							cout << "Maximo: " << max_points << endl;
 							break;
 						}
 						else if(platforms[i].bottomRight.y > 0) {
-							platforms[i].bottomRight.y -= platformFallSpeed;
+							platforms[i].bottomRight.y -= (platformFallSpeed + ((int)(points/5)));
 							platforms[i].topLeft.y = platforms[i].bottomRight.y - PLATFORM_HEIGHT;
+						}
+						else if(isPlatFalling[i])
+						{
+							isPlatFalling[i] = false;
+							points++;
+							if(points > max_points) max_points = points;
+
+							platormToFall = randomFall();
 						}
 						else if(platormToFall == i) //Começa a derrubar proxima plataforma
 						{
 							platforms[i].topLeft.y = HEIGHT;
 							platforms[i].bottomRight.y = platforms[i].topLeft.y + PLATFORM_HEIGHT;
 							platormToFall = -1;
+							isPlatFalling[i] = true;
 						}
 					}
 
@@ -389,11 +426,15 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 		moveRight = true;
 	else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
 	{
-		int min_val = 0;
-		int max_val = PLATFORMS-1;
-		platormToFall = min_val + (rand() % (max_val - min_val + 1));
+		platormToFall = randomFall();
 	}
+}
 
+int randomFall()
+{
+	int min_val = 0;
+	int max_val = PLATFORMS-1;
+	return min_val + (rand() % (max_val - min_val + 1));
 }
 
 bool checkCollision(GameObject *one, GameObject *two)
@@ -530,4 +571,49 @@ int objectDrawn(GameObject *player, GameObject *walls, GLuint quantWalls, GameOb
 	glBindVertexArray(0);
 
 	return VAO;
+}
+
+GLuint loadTexture(string filePath)
+{
+	GLuint texID;
+
+	// Gera o identificador da textura na memória
+	glGenTextures(1, &texID);
+	glBindTexture(GL_TEXTURE_2D, texID);
+
+	// Ajusta os parâmetros de wrapping e filtering
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// Carregamento dos pixels da imagem
+	int width, height, nrChannels;
+	unsigned char *data = stbi_load(filePath.c_str(), &width, &height,
+	&nrChannels, 0);
+
+	if (data)
+	{
+		if (nrChannels == 3) //jpg, bmp
+ 		{
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE,
+			data);
+ 		}
+ 		else //png
+ 		{
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+			data);
+ 		}
+ 		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
+
+	// Liberar o data e desconectar a textura
+	stbi_image_free(data);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+    return texID;
 }
