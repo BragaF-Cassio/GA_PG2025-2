@@ -4,6 +4,15 @@
 ## Jogo: Sai de Baixo!
 - Objetivo: desviar das plataformas em queda.
 
+## Como jogar:
+- O jogo pode ser iniciado executando o play.bat
+- Use as setas para se mover para a esquerda e para a direita
+- Desvie das plataformas em queda
+- Desviando de uma plataforma, você ganha 1 ponto
+- Ao ser atingido por uma plataforma, o jogo acaba
+- As plataformas surgem aleatóriamente
+- A velocidade em que as plataformas caem aumenta com o tempo, deixando o jogo progressivamente mais difícil
+
 ## Integrantes: 
 - Cássio Ferreira Braga
 - Gabriel Cezar Walber
