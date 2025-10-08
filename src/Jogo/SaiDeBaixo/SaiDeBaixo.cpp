@@ -241,10 +241,10 @@ int main()
 	// Gerando um buffer simples, com a geometria de um triângulo
 	GLuint VAO[1];
 
-	GLuint texID = loadTexture("../assets/tex/background.png");
+	//GLuint texID = loadTexture("../assets/tex/background.png");
 	
 	//Habilitação do teste de profundidade
-	glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_DEPTH_TEST);
 
 	glUseProgram(shaderID); // Reseta o estado do shader para evitar problemas futuros
 
@@ -256,10 +256,10 @@ int main()
 
 	glUniformMatrix4fv(glGetUniformLocation(shaderID, "projection"),1,GL_FALSE,value_ptr(projection));
 
-	mat4 model = mat4(1); //matriz identidade
+	//mat4 model = mat4(1); //matriz identidade
 
 	// Ativar o primeiro buffer de textura do OpenGL
-	glActiveTexture(GL_TEXTURE0);
+	//glActiveTexture(GL_TEXTURE0);
 
 	VAO[0] = objectDrawn(&player, walls, 2, platforms, PLATFORMS);
 
@@ -573,7 +573,7 @@ int objectDrawn(GameObject *player, GameObject *walls, GLuint quantWalls, GameOb
 	return VAO;
 }
 
-GLuint loadTexture(string filePath)
+/*GLuint loadTexture(string filePath)
 {
 	GLuint texID;
 
@@ -616,4 +616,4 @@ GLuint loadTexture(string filePath)
 	glBindTexture(GL_TEXTURE_2D, 0);
 
     return texID;
-}
+}*/
