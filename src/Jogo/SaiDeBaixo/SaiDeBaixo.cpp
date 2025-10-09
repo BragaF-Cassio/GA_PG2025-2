@@ -9,88 +9,13 @@
  *   - Processamento Gráfico: Fundamentos (Ciência da Computação - Presencial)
  *
  * Professora: Rossana Baptista Queiroz
- * 
- * Descrição:
- *   "Sai de Baixo!" é um jogo de queda de plataformas, em que alguém
- * 		muito incompetente derruba plataformas continuamente e
- * 		coincidentemente acima de sua cabeça. Como um 
- * 		ser vivo que preza pela própria existência, seus instintos dizem que
- * 		você não deve ficar abaixo das plataformas que estão em queda, caso
- * 		queira sobreviver ao máximo de tempo possível.
- * 	 Desvie das plataformas para sobreviver ao máximo.
  *
  * Histórico:
  *   - Versão inicial: 08/10/2025
  *
  */
 
-#include <iostream>
-#include <string>
-#include <assert.h>
-#include <vector>
-#include <cstdlib>
-#include <ctime>
-
-using namespace std;
-
-// GLAD
-#include <glad/glad.h>
-
-// GLFW
-#include <GLFW/glfw3.h>
-
-// GLM
-#include <glm/glm.hpp> 
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <stb_image.h>
-
-#define STEP_SIZE 16
-#define PLAYER_WIDTH (WIDTH/20)
-#define PLATFORMS 5
-#define PLATFORM_HEIGHT (HEIGHT/20)
-
-#define COLOR_RANGE(a) (a>1?2-a:a)
-
-using namespace glm;
-
-typedef struct coordinates {
-	GLfloat x;
-	GLfloat y;
-} PointXY;
-
-typedef struct colors {
-	GLfloat red;
-	GLfloat green;
-	GLfloat blue;
-} GameColor;
-
-typedef struct object_game {
-	PointXY topLeft;
-	PointXY bottomRight;
-	PointXY sizeTopLeft;
-	PointXY sizeBottomRight;
-	string name;
-	GameColor colors;
-} GameObject;
-
-enum game_state {
-	GAME_STOPPED,
-	GAME_RUNNING,
-	GAME_FINISHED
-};
-
-// Protótipo da função de callback de teclado
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
-
-// Protótipos das funções
-int setupShader();
-int randomFall();
-bool checkCollision(GameObject *one, GameObject *two);
-int objectDrawn(GameObject *player, GameObject *walls, GLuint quantWalls, GameObject *platforms, GLuint quantPlatforms);
-void gameSetup(GameObject *player, GameObject *walls, GLuint quantWalls, GameObject *platforms, GLuint quantPlatforms);
-GLuint loadTexture(string filePath);
+#include "SaiDeBaixo.h"
 
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 800, HEIGHT = 600;
@@ -241,11 +166,6 @@ int main()
 	// Gerando um buffer simples, com a geometria de um triângulo
 	GLuint VAO[1];
 
-	//GLuint texID = loadTexture("../assets/tex/background.png");
-	
-	//Habilitação do teste de profundidade
-	//glEnable(GL_DEPTH_TEST);
-
 	glUseProgram(shaderID); // Reseta o estado do shader para evitar problemas futuros
 
 	double prev_s = glfwGetTime();	// Define o "tempo anterior" inicial.
@@ -255,11 +175,6 @@ int main()
 	mat4 projection = ortho(0.0, (double)WIDTH, (double)HEIGHT, 0.0, -1.0, 1.0);
 
 	glUniformMatrix4fv(glGetUniformLocation(shaderID, "projection"),1,GL_FALSE,value_ptr(projection));
-
-	//mat4 model = mat4(1); //matriz identidade
-
-	// Ativar o primeiro buffer de textura do OpenGL
-	//glActiveTexture(GL_TEXTURE0);
 
 	VAO[0] = objectDrawn(&player, walls, 2, platforms, PLATFORMS);
 
